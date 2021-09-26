@@ -1,6 +1,6 @@
 # Zwift
 
-## clean and intuitive task management application.
+## clean and intuitive task management application
 
 ### Features:
 
