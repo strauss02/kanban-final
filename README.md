@@ -2,6 +2,9 @@
 
 ## clean and intuitive task management application
 
+Try it now!
+https://strauss02.github.io/kanban-final/solution/
+
 ### Features:
 
 💯Easy to use task management
