@@ -34,27 +34,24 @@ const NETWORK_ERR =
 function handleClick(event) {
   try {
     if (event.target.className.includes('submit-task')) {
-      const list = event.target.parentElement.querySelector('ul')
-      assertInputNotEmpty(list)
-      const taskText = event.target
-        .closest('section')
-        .querySelector('.add-task-input').value
-      addTaskBox(list, taskText)
-      captureData()
-    }
-    if (event.target.parentElement.className === 'remove-btn') {
-      removeTask(event.target.closest('li'))
-      captureData()
-    }
-    if (event.target.parentElement.className === 'clean-section-btn') {
-      cleanSections([event.target.closest('section')])
-      captureData()
-    }
-    if (event.target.parentElement.className === 'change-color-btn') {
-      if (!event.target.closest('section').querySelector('.color-picker')) {
-        displayColorPicker(event)
-      } else {
-        removeColorPicker(event)
+      handleTaskSubmit(event)
+    } else {
+      switch (event.target.parentElement.className) {
+        case 'remove-btn':
+          removeTask(event.target.closest('li'))
+          captureData()
+          break
+        case 'clean-section-btn':
+          cleanSections([event.target.closest('section')])
+          captureData()
+          break
+        case 'change-color-btn':
+          if (!event.target.closest('section').querySelector('.color-picker')) {
+            displayColorPicker(event)
+          } else {
+            removeColorPicker(event)
+          }
+          break
       }
     }
   } catch (error) {
@@ -91,6 +88,16 @@ function handleKeyPress(event) {
  */
 function handleFocusOut(event) {
   event.target.setAttribute('contenteditable', false)
+}
+
+function handleTaskSubmit(event) {
+  const list = event.target.parentElement.querySelector('ul')
+  assertInputNotEmpty(list)
+  const taskText = event.target
+    .closest('section')
+    .querySelector('.add-task-input').value
+  addTaskBox(list, taskText)
+  captureData()
 }
 
 /**
