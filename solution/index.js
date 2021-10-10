@@ -90,6 +90,12 @@ function handleFocusOut(event) {
   event.target.setAttribute('contenteditable', false)
 }
 
+/**Handles task submission button clicks.
+ ** Prevents adding of empty tasks.
+ ** takes the value from the input and uses it as the text for the task-box added
+ ** ends by capturing data
+ * @param {Object} event - event object recieved from the event listener
+ */
 function handleTaskSubmit(event) {
   const list = event.target.parentElement.querySelector('ul')
   assertInputNotEmpty(list)
@@ -156,6 +162,7 @@ function handleOptionClick(event) {
 async function handleRequest(req) {
   displayLoader()
   greyOutButtons(true)
+
   try {
     if (req === 'load') {
       await getRemoteData()
