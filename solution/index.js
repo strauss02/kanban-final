@@ -69,7 +69,6 @@ function handleClick(event) {
 function handleDoubleClick(event) {
   const eventTarget = event.target
   eventTarget.setAttribute('contenteditable', true)
-  // eventTarget.addEventListener('input', handleInput)
 }
 
 /**Handles keyboard events.
