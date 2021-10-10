@@ -537,15 +537,13 @@ function prepareRemoteDataBody() {
 
 /**************** Drag & Drop Functions ****************/
 
-document.addEventListener('drag', function (event) {})
-
-document.addEventListener('dragstart', function (event) {
+mainContainer.addEventListener('dragstart', function (event) {
   if (event.target.className === 'task') {
     event.target.classList.add('dragging')
   }
 })
 
-document.addEventListener('dragend', function (event) {
+mainContainer.addEventListener('dragend', function (event) {
   event.target.classList.remove('dragging')
 })
 
@@ -558,15 +556,13 @@ document.addEventListener(
   false
 )
 
-document.addEventListener('drop', function (event) {
+mainContainer.addEventListener('drop', function (event) {
   event.preventDefault()
   // move dragged task to the selected section
   const dragEl = document.querySelector('.dragging')
-  const sectionElement = getSectionFromPath(event)
-  if (sectionElement) {
-    dragEl.parentNode.removeChild(dragEl)
-    const list = sectionElement.querySelector('ul')
-    list.insertBefore(dragEl, list.firstChild)
+  const sectionList = getSectionFromPath(event).querySelector('ul')
+  if (sectionList) {
+    sectionList.insertBefore(dragEl, sectionList.firstChild)
     captureData()
   }
 })
