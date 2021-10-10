@@ -76,10 +76,12 @@ function handleDoubleClick(event) {
  * @param {Object} event - event object recieved from the event listener
  */
 function handleKeyPress(event) {
-  if (document.querySelector('task-box:hover')) {
-    if (event.altKey && POSSIBLE_KEYS.includes(event.key)) {
-      handleMultipleKeys(event)
-    }
+  if (
+    document.querySelector('task-box:hover') &&
+    event.altKey &&
+    POSSIBLE_KEYS.includes(event.key)
+  ) {
+    handleMultipleKeys(event)
   }
 }
 
