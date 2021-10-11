@@ -266,6 +266,14 @@ function addTaskBox(list, text) {
 }
 
 /**
+ * Removes a task element.
+ * @param {Element} task - the task element to remove.
+ */
+function removeTask(task) {
+  task.remove()
+}
+
+/**
  * Moves a given task to a given list. Saves to localStorage after moving.
  * @param {Element} task - task element to be moved
  * @param {Element} list - list element to move the task to
@@ -274,14 +282,6 @@ function moveTask(task, list) {
   addTaskBox(list, stripTaskBox(task))
   removeTask(task)
   captureData()
-}
-
-/**
- * Removes a task element.
- * @param {Element} task - the task element to remove.
- */
-function removeTask(task) {
-  task.remove()
 }
 
 /**
@@ -315,25 +315,22 @@ function removeColorPicker(event) {
   colorPickerContainer.remove()
 }
 
-/** ************** Event Listeners *************** */
-
-mainContainer.addEventListener('click', handleClick)
-
-optionBox.addEventListener('click', handleOptionClick)
-
-window.addEventListener('load', loadData)
-
-window.addEventListener('keydown', handleKeyPress)
-
-mainContainer.addEventListener('dblclick', handleDoubleClick)
-
-mainContainer.addEventListener('focusout', handleFocusOut)
-
-mainContainer.addEventListener('input', handleInput)
-
-searchInput.addEventListener('input', handleSearchInput)
-
 /** ************** HTTP Requests *************** */
+
+/**
+ * Prepares a dedicated data object especially for storing data in the remote storage bin.
+ * @returns {Object}  a data object containing task information and some other properties required for API communication.
+ */
+function prepareRemoteDataBody() {
+  const remoteData = {
+    _id: '614aea974021ac0e6c080c61',
+    name: 'Ido',
+    tasks: captureData(),
+    createdAt: '2021-09-22T08:34:31.333Z',
+    updatedAt: '2021-09-22T08:34:31.333Z',
+  }
+  return remoteData
+}
 
 /**
  * Gets remote data from an API storage bin.
@@ -370,21 +367,6 @@ async function storeRemoteData() {
   if (response.status > 200) {
     throw NETWORK_ERR
   }
-}
-
-/**
- * Prepares a dedicated data object especially for storing data in the remote storage bin.
- * @returns {Object}  a data object containing task information and some other properties required for API communication.
- */
-function prepareRemoteDataBody() {
-  const remoteData = {
-    _id: '614aea974021ac0e6c080c61',
-    name: 'Ido',
-    tasks: captureData(),
-    createdAt: '2021-09-22T08:34:31.333Z',
-    updatedAt: '2021-09-22T08:34:31.333Z',
-  }
-  return remoteData
 }
 
 /** ************** Event Handlers *************** */
@@ -448,6 +430,26 @@ function handleDoubleClick(event) {
   eventTarget.setAttribute('contenteditable', true)
 }
 
+/** Handles multiple keystroke events.
+ * Uses an options dictionary to match the corresponding number pressed to a list.
+ * Pressing a number that does not match any dictionary property will result in no action.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleMultipleKeys(event) {
+  const task = document.querySelector('task-box:hover').parentElement
+
+  const options = {
+    1: todoTasks,
+    2: inProgressTasks,
+    3: doneTasks,
+  }
+
+  const list = options[event.key]
+
+  if (list) {
+    moveTask(task, list)
+  }
+}
 /** Handles keyboard events.
  * If a task box is being hovered, allows task removal with ALT + num shortcut.
  * @param {Object} event - event object recieved from the event listener
@@ -483,40 +485,11 @@ function handleInput(event) {
   }
 }
 
-/** Handles multiple keystroke events.
- * Uses an options dictionary to match the corresponding number pressed to a list.
- * Pressing a number that does not match any dictionary property will result in no action.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleMultipleKeys(event) {
-  const task = document.querySelector('task-box:hover').parentElement
-
-  const options = {
-    1: todoTasks,
-    2: inProgressTasks,
-    3: doneTasks,
-  }
-
-  const list = options[event.key]
-
-  if (list) {
-    moveTask(task, list)
-  }
-}
-
 /** Handles input events targeting the search box.
  * @param {Object} event - event object recieved from the event listener
  */
 function handleSearchInput(event) {
   filterTasks(event.target.value)
-}
-
-/** Handles click events targeting an option button.
- * Passes a request by checking the button's class name.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleOptionClick(event) {
-  handleRequest(event.target.className)
 }
 
 /**
@@ -542,6 +515,14 @@ async function handleRequest(req) {
   }
 }
 
+/** Handles click events targeting an option button.
+ * Passes a request by checking the button's class name.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleOptionClick(event) {
+  handleRequest(event.target.className)
+}
+
 /** ************** Drag & Drop Functions *************** */
 
 mainContainer.addEventListener('dragstart', (event) => {
@@ -563,6 +544,18 @@ document.addEventListener(
   false
 )
 
+/**
+ * Gets the section element, if it exist, from the path of a drop event.
+ * @param {Object} event the event dispatched by the event listener
+ * @returns {Element} - the section element from the event path
+ */
+function getSectionFromPath(event) {
+  const sectionElement = event
+    .composedPath()
+    .filter((element) => element.tagName === 'SECTION')[0]
+  return sectionElement
+}
+
 mainContainer.addEventListener('drop', (event) => {
   event.preventDefault()
   // move dragged task to the selected section
@@ -574,14 +567,20 @@ mainContainer.addEventListener('drop', (event) => {
   }
 })
 
-/**
- * Gets the section element, if it exist, from the path of a drop event.
- * @param {Object} event the event dispatched by the event listener
- * @returns {Element} - the section element from the event path
- */
-function getSectionFromPath(event) {
-  const sectionElement = event
-    .composedPath()
-    .filter((element) => element.tagName == 'SECTION')[0]
-  return sectionElement
-}
+/** ************** Event Listeners *************** */
+
+mainContainer.addEventListener('click', handleClick)
+
+optionBox.addEventListener('click', handleOptionClick)
+
+window.addEventListener('load', loadData)
+
+window.addEventListener('keydown', handleKeyPress)
+
+mainContainer.addEventListener('dblclick', handleDoubleClick)
+
+mainContainer.addEventListener('focusout', handleFocusOut)
+
+mainContainer.addEventListener('input', handleInput)
+
+searchInput.addEventListener('input', handleSearchInput)
