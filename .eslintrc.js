@@ -1,11 +1,19 @@
-process.chdir(__dirname)
-
 module.exports = {
-  root: true,
-  parser: 'babel-eslint',
-  parserOptions: {
-    allowImportExportEverywhere: true,
-    codeFrame: false,
+  env: {
+    browser: true,
+    es6: true,
   },
-  extends: ['airbnb-standard'],
+  extends: ['airbnb-base', 'prettier'],
+  globals: {
+    Atomics: 'readonly',
+    SharedArrayBuffer: 'readonly',
+  },
+  parserOptions: {
+    ecmaVersion: 2018,
+    sourceType: 'module',
+  },
+  plugins: ['prettier'],
+  rules: {
+    'prettier/prettier': 'error',
+  },
 }

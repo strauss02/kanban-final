@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint --fix solution/index.js",
+    "format": "prettier -w .",
+    "build": "webpack build",
     "test": "jest",
     "final": "npm i && node ./scripts/getBin.js"
   },
@@ -11,12 +14,19 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
     "eslint-config-airbnb-standard": "^3.1.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.24.2",
+    "eslint-plugin-prettier": "^4.0.0",
     "gifencoder": "^2.0.1",
     "jest": "^27.1.1",
     "nock-puppeteer": "^1.0.6",
     "png-js": "^1.0.0",
-    "puppeteer": "^10.2.0"
+    "prettier": "^2.4.1",
+    "puppeteer": "^10.2.0",
+    "webpack-cli": "^4.9.0"
   },
   "jest": {
     "moduleFileExtensions": [
