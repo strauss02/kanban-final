@@ -1,251 +1,28 @@
-/**************** Select Elements ****************/
+import style from './styles.css'
 
-//Layout Elements
-const todoSection = document.querySelector('.todo-section')
-const doneSection = document.querySelector('.done-section')
-const inProgressSection = document.querySelector('.in-progress-section')
+/** ************** Select Elements *************** */
+
+// Layout Elements
+
 const mainContainer = document.querySelector('.main-container')
-//List Elements
+// List Elements
 const doneTasks = document.querySelector('.done-tasks')
 const todoTasks = document.querySelector('.to-do-tasks')
 const inProgressTasks = document.querySelector('.in-progress-tasks')
-//Task Elements
-const taskBox = document.createElement('div')
-//Utility Elements
+// Task Elements
+// Utility Elements
 const searchInput = document.querySelector('#search')
 const optionBox = document.querySelector('.option-box')
 
-/**************** Constants ****************/
-
+/** ************** Constants *************** */
+//
 const POSSIBLE_KEYS = ['1', '2', '3']
-
-const EMPTY_TASKS_DATA = { todo: [], 'in-progress': [], done: [] }
 
 const NETWORK_ERR =
   'Whoops! There was a network error. Please know, this is not your fault.'
 
-/**************** Event Handlers ****************/
-
-/**Handles click events by delegation.
- ** Checks if input is not empty before allowing to add.
- ** Captures and saves data after adding a task.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleClick(event) {
-  try {
-    if (event.target.className.includes('submit-task')) {
-      const list = event.target.parentElement.querySelector('ul')
-      assertInputNotEmpty(list)
-      const taskText = event.target
-        .closest('section')
-        .querySelector('.add-task-input').value
-      addTaskBox(list, taskText)
-      captureData()
-    }
-    if (event.target.parentElement.className === 'remove-btn') {
-      removeTask(event.target.closest('li'))
-      captureData()
-    }
-    if (event.target.parentElement.className === 'clean-section-btn') {
-      cleanSections([event.target.closest('section')])
-      captureData()
-    }
-    if (event.target.parentElement.className === 'change-color-btn') {
-      if (!event.target.closest('section').querySelector('.color-picker')) {
-        displayColorPicker(event)
-      } else {
-        removeColorPicker(event)
-      }
-    }
-  } catch (error) {
-    alert(error)
-  }
-}
-
-/**Handles double click events.
- * Makes the double-clicked event editable.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleDoubleClick(event) {
-  const eventTarget = event.target
-  eventTarget.setAttribute('contenteditable', true)
-  // eventTarget.addEventListener('input', handleInput)
-}
-
-/**Handles keyboard events.
- * If a task box is being hovered, allows task removal with ALT + num shortcut.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleKeyPress(event) {
-  if (document.querySelector('task-box:hover')) {
-    if (event.altKey && POSSIBLE_KEYS.includes(event.key)) {
-      handleMultipleKeys(event)
-    }
-  }
-}
-
-/**Handles focusout events.
- * Removes the 'contenteditable' attribute.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleFocusOut(event) {
-  event.target.setAttribute('contenteditable', false)
-}
-
-/**
- * Saves the board for every element edit event.
- */
-function handleInput(event) {
-  if (document.querySelector('div:focus')) {
-    captureData()
-  }
-  if (document.querySelector('.color-picker')) {
-    const colorPicker = event.target
-    colorPicker.closest('section').style.backgroundColor = colorPicker.value
-  }
-}
-
-/**Handles multiple keystroke events.
- * Uses an options dictionary to match the corresponding number pressed to a list.
- * Pressing a number that does not match any dictionary property will result in no action.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleMultipleKeys(event) {
-  const task = document.querySelector('task-box:hover').parentElement
-
-  const options = {
-    1: todoTasks,
-    2: inProgressTasks,
-    3: doneTasks,
-  }
-
-  const list = options[event.key]
-
-  if (list) {
-    moveTask(task, list)
-  }
-}
-
-/**Handles input events targeting the search box.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleSearchInput(event) {
-  filterTasks(event.target.value)
-}
-
-/**Handles click events targeting an option button.
- * Passes a request by checking the button's class name.
- * @param {Object} event - event object recieved from the event listener
- */
-function handleOptionClick(event) {
-  handleRequest(event.target.className)
-}
-
-/**
- * Sends an HTTP request. Gets a string describing the type of request.
- * @param {String} req - the type of request to send
- */
-async function handleRequest(req) {
-  displayLoader()
-  greyOutButtons(true)
-  try {
-    if (req === 'load') {
-      await getRemoteData()
-    }
-    if (req === 'save') {
-      await storeRemoteData()
-    }
-  } catch (error) {
-    DisplayInfo(error)
-  } finally {
-    greyOutButtons(false)
-    removeLoader()
-  }
-}
-
-/**************** Classes ****************/
-
-/** Initializes a class for the custom element 'task-box'.*/
-class TaskBox extends HTMLElement {
-  constructor() {
-    super()
-  }
-  connectedCallback() {}
-}
-
-customElements.define('task-box', TaskBox)
-
-/**************** User Interface ****************/
-function DisplayInfo(text) {
-  alert(text)
-}
-
-/** Creates a new task-box element and adds it to the list passed.
- *
- * @param {Element} list - the element that will contain the task-box
- * @param {String} text - the text to be inserted inside the task-box
- */
-function addTaskBox(list, text) {
-  const taskBox = prepareTaskBox()
-  const listItem = document.createElement('li')
-  listItem.classList.add('task')
-  listItem.append(taskBox)
-  listItem.setAttribute('draggable', true)
-  list.insertBefore(listItem, list.firstChild)
-  taskBox.querySelector('div').textContent = text
-}
-
-/**
- * Moves a given task to a given list. Saves to localStorage after moving.
- * @param {Element} task - task element to be moved
- * @param {Element} list - list element to move the task to
- */
-function moveTask(task, list) {
-  addTaskBox(list, stripTaskBox(task))
-  removeTask(task)
-  captureData()
-}
-
-/**
- * Removes a task element.
- * @param {Element} task - the task element to remove.
- */
-function removeTask(task) {
-  task.remove()
-}
-
-/**
- *Clears the section's list from tasks completely
- * @param {Array} sections - Array of sections to clear
- */
-function cleanSections(sections) {
-  sections.forEach((section) =>
-    section.querySelectorAll('li').forEach((item) => removeTask(item))
-  )
-}
-
-/**
- * Displays the color picker
- * @param {Object} event the event dispatched by the event listener
- */
-function displayColorPicker(event) {
-  const div = document.createElement('div')
-  div.classList.add('color-picker-container')
-  const input = document.createElement('input')
-  input.classList.add('color-picker')
-  input.setAttribute('type', 'color')
-  div.append(input)
-  event.target.closest('.section-options').append(div)
-}
-
-function removeColorPicker(event) {
-  const colorPickerContainer = event.target
-    .closest('section')
-    .querySelector('.color-picker-container')
-  colorPickerContainer.remove()
-}
-
-/**************** Utility Functions ****************/
+const INPUT_ERR = 'you must enter a value'
+/** ************** Utility Functions *************** */
 
 /**
  * Sets the hidden attribute of an element to true or false.
@@ -253,7 +30,39 @@ function removeColorPicker(event) {
  * @param {Boolean} state - Boolean representing what the hidden attribute should be set to
  */
 function isTaskHidden(task, state) {
-  task.parentElement.hidden = state
+  const predicate = task
+  predicate.parentElement.hidden = state
+}
+
+/**
+ * Return an array with a given section's taskBoxes
+ * @param {Element} section the section HTMLElement
+ * @returns an array containing the section's taskBox elements
+ */
+function getTaskList(section) {
+  const tasks = section.querySelectorAll('task-box')
+  return [...tasks]
+}
+
+/**
+ * Gets the essential section title by cutting off the '-section' string.
+ * @param {Element} section the section HTMLElement
+ * @returns string representing the section name
+ */
+function getSectionTitle(section) {
+  const sectionClassName = [...section.classList].join('')
+  const sectionName = sectionClassName.replace('-section', '')
+  return sectionName
+}
+
+/**
+ * Gets a taskBox and extracts text from it.
+ * @param {Element} taskBox
+ * @returns the text from the taskBox
+ */
+function stripTaskBox(taskBox) {
+  const text = taskBox.querySelector('div').textContent
+  return text
 }
 
 /**
@@ -270,13 +79,14 @@ function extractData(section) {
 }
 
 /**
- * Gets a taskBox and extracts text from it.
- * @param {Element} taskBox
- * @returns the text from the taskBox
+ * Gets the section element of the given essential title by adding a '-section' string to it
+ * @param {String} title string representing the essential section name
+ * @returns {Element} the given title's corresponding section HTMLElement
  */
-function stripTaskBox(taskBox) {
-  const text = taskBox.querySelector('div').textContent
-  return text
+function getSectionElementByTitle(title) {
+  const sectionName = `${title}-section`
+  const sectionElement = document.querySelector(`.${sectionName}`)
+  return sectionElement
 }
 
 /** Takes data and displays it by adding it to the page.
@@ -289,7 +99,7 @@ function insertData(data) {
     const sectionElement = getSectionElementByTitle(subArr[0])
     const listElement = sectionElement.querySelector('ul')
     const textsArray = subArr[1]
-    //reverse it for creating each taskBox in the order they appeared last.
+    // reverse it for creating each taskBox in the order they appeared last.
     textsArray.reverse()
     textsArray.forEach((text) => {
       addTaskBox(listElement, text)
@@ -303,8 +113,8 @@ function insertData(data) {
  */
 function prepareTaskBox() {
   const taskBox = document.createElement('task-box')
-  let container = document.createElement('div')
-  let button = document.createElement('button')
+  const container = document.createElement('div')
+  const button = document.createElement('button')
   button.classList.add('remove-btn')
   button.innerHTML = '<i class="far fa-times-circle fa-2x"></i>'
   taskBox.append(container)
@@ -320,12 +130,12 @@ function prepareTaskBox() {
  * @param {String} text the text to filter the tasks by
  */
 function filterTasks(text) {
-  text = text.toLowerCase()
+  const lowerCaseText = text.toLowerCase()
   const sections = document.querySelectorAll('section')
   sections.forEach((section) => {
     const tasks = getTaskList(section)
     tasks.forEach((task) => {
-      if (!stripTaskBox(task).toLowerCase().includes(text)) {
+      if (!stripTaskBox(task).toLowerCase().includes(lowerCaseText)) {
         isTaskHidden(task, true)
       } else {
         isTaskHidden(task, false)
@@ -368,41 +178,16 @@ function greyOutButtons(boolean) {
   }
 }
 
-/**
- * Gets the essential section title by cutting off the '-section' string.
- * @param {Element} section the section HTMLElement
- * @returns string representing the section name
+/** ************** Storage Functions *************** */
+
+/** Stores the data captured in localStorage.
+ * @param {Object} data - the object that contains the data to be stored
  */
-function getSectionTitle(section) {
-  const sectionClassName = [...section.classList].join('')
-  const sectionName = sectionClassName.replace('-section', '')
-  return sectionName
+function storeLocally(data) {
+  localStorage.setItem('tasks', JSON.stringify(data))
 }
 
-/**
- * Gets the section element of the given essential title by adding a '-section' string to it
- * @param {String} title string representing the essential section name
- * @returns {Element} the given title's corresponding section HTMLElement
- */
-function getSectionElementByTitle(title) {
-  const sectionName = title + '-section'
-  const sectionElement = document.querySelector(`.${sectionName}`)
-  return sectionElement
-}
-
-/**
- * Return an array with a given section's taskBoxes
- * @param {Element} section the section HTMLElement
- * @returns an array containing the section's taskBox elements
- */
-function getTaskList(section) {
-  const tasks = section.querySelectorAll('task-box')
-  return [...tasks]
-}
-
-/**************** Storage Functions ****************/
-
-/**Captures a snapshot of the data on the page and stores it in localStorage
+/** Captures a snapshot of the data on the page and stores it in localStorage
  * @returns the data to store in the form of an object
  */
 function captureData() {
@@ -414,13 +199,6 @@ function captureData() {
   })
   storeLocally(dataObject)
   return dataObject
-}
-
-/**Stores the data captured in localStorage.
- * @param {Object} data - the object that contains the data to be stored
- */
-function storeLocally(data) {
-  localStorage.setItem('tasks', JSON.stringify(data))
 }
 
 /** Loads data from localStorage. Creates data item in localStorage if it is empty.
@@ -442,9 +220,9 @@ function loadRemoteData(data) {
   storeLocally(data)
 }
 
-/**************** Assert Functions ****************/
+/** ************** Assert Functions *************** */
 
-/** Checks if localStorage contains any related data. If not, stores an empty template data object.*/
+/** Checks if localStorage contains any related data. If not, stores an empty template data object. */
 function assertDataNotEmpty() {
   if (!localStorage.getItem('tasks')) {
     captureData()
@@ -458,29 +236,103 @@ function assertDataNotEmpty() {
 function assertInputNotEmpty(list) {
   const input = list.parentElement.querySelector('.add-task-input')
   if (input.value === '') {
-    throw 'you must enter a value'
+    throw INPUT_ERR
   }
 }
 
-/**************** Event Listeners ****************/
+/** ************** Classes *************** */
 
-mainContainer.addEventListener('click', handleClick)
+/** Initializes a class for the custom element 'task-box'. */
+class TaskBox extends HTMLElement {}
 
-optionBox.addEventListener('click', handleOptionClick)
+customElements.define('task-box', TaskBox)
 
-window.addEventListener('load', loadData)
+/** ************** User Interface *************** */
+function DisplayInfo(text) {
+  alert(text)
+}
 
-window.addEventListener('keydown', handleKeyPress)
+/** Creates a new task-box element and adds it to the list passed.
+ *
+ * @param {Element} list - the element that will contain the task-box
+ * @param {String} text - the text to be inserted inside the task-box
+ */
+function addTaskBox(list, text) {
+  const taskBox = prepareTaskBox()
+  const listItem = document.createElement('li')
+  listItem.classList.add('task')
+  listItem.append(taskBox)
+  listItem.setAttribute('draggable', true)
+  list.insertBefore(listItem, list.firstChild)
+  taskBox.querySelector('div').textContent = text
+}
 
-mainContainer.addEventListener('dblclick', handleDoubleClick)
+/**
+ * Removes a task element.
+ * @param {Element} task - the task element to remove.
+ */
+function removeTask(task) {
+  task.remove()
+}
 
-mainContainer.addEventListener('focusout', handleFocusOut)
+/**
+ * Moves a given task to a given list. Saves to localStorage after moving.
+ * @param {Element} task - task element to be moved
+ * @param {Element} list - list element to move the task to
+ */
+function moveTask(task, list) {
+  addTaskBox(list, stripTaskBox(task))
+  removeTask(task)
+  captureData()
+}
 
-mainContainer.addEventListener('input', handleInput)
+/**
+ *Clears the section's list from tasks completely
+ * @param {Array} sections - Array of sections to clear
+ */
+function cleanSections(sections) {
+  sections.forEach((section) =>
+    section.querySelectorAll('li').forEach((item) => removeTask(item))
+  )
+}
 
-searchInput.addEventListener('input', handleSearchInput)
+/**
+ * Displays the color picker
+ * @param {Object} event the event dispatched by the event listener
+ */
+function displayColorPicker(event) {
+  const div = document.createElement('div')
+  div.classList.add('color-picker-container')
+  const input = document.createElement('input')
+  input.classList.add('color-picker')
+  input.setAttribute('type', 'color')
+  div.append(input)
+  event.target.closest('.section-options').append(div)
+}
 
-/**************** HTTP Requests ****************/
+function removeColorPicker(event) {
+  const colorPickerContainer = event.target
+    .closest('section')
+    .querySelector('.color-picker-container')
+  colorPickerContainer.remove()
+}
+
+/** ************** HTTP Requests *************** */
+
+/**
+ * Prepares a dedicated data object especially for storing data in the remote storage bin.
+ * @returns {Object}  a data object containing task information and some other properties required for API communication.
+ */
+function prepareRemoteDataBody() {
+  const remoteData = {
+    _id: '614aea974021ac0e6c080c61',
+    name: 'Ido',
+    tasks: captureData(),
+    createdAt: '2021-09-22T08:34:31.333Z',
+    updatedAt: '2021-09-22T08:34:31.333Z',
+  }
+  return remoteData
+}
 
 /**
  * Gets remote data from an API storage bin.
@@ -501,7 +353,7 @@ async function getRemoteData() {
   return data.tasks
 }
 
-/** Stores data in a remote API storage bin.*/
+/** Stores data in a remote API storage bin. */
 async function storeRemoteData() {
   const response = await fetch(
     'https://json-bins.herokuapp.com/bin/614aea974021ac0e6c080c61',
@@ -519,56 +371,180 @@ async function storeRemoteData() {
   }
 }
 
-/**
- * Prepares a dedicated data object especially for storing data in the remote storage bin.
- * @returns {Object}  a data object containing task information and some other properties required for API communication.
+/** ************** Event Handlers *************** */
+/** Handles task submission button clicks.
+ ** Prevents adding of empty tasks.
+ ** takes the value from the input and uses it as the text for the task-box added
+ ** ends by capturing data
+ * @param {Object} event - event object recieved from the event listener
  */
-function prepareRemoteDataBody() {
-  const remoteData = {
-    _id: '614aea974021ac0e6c080c61',
-    name: 'Ido',
-    tasks: captureData(),
-    createdAt: '2021-09-22T08:34:31.333Z',
-    updatedAt: '2021-09-22T08:34:31.333Z',
-  }
-  return remoteData
+function handleTaskSubmit(event) {
+  const list = event.target.parentElement.querySelector('ul')
+  assertInputNotEmpty(list)
+  const taskText = event.target
+    .closest('section')
+    .querySelector('.add-task-input').value
+  addTaskBox(list, taskText)
+  captureData()
 }
 
-/**************** Drag & Drop Functions ****************/
+/** Handles click events by delegation.
+ ** Checks if input is not empty before allowing to add.
+ ** Captures and saves data after adding a task.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleClick(event) {
+  try {
+    if (event.target.className.includes('submit-task')) {
+      handleTaskSubmit(event)
+    } else {
+      switch (event.target.parentElement.className) {
+        case 'remove-btn':
+          removeTask(event.target.closest('li'))
+          captureData()
+          break
+        case 'clean-section-btn':
+          cleanSections([event.target.closest('section')])
+          captureData()
+          break
+        case 'change-color-btn':
+          if (!event.target.closest('section').querySelector('.color-picker')) {
+            displayColorPicker(event)
+          } else {
+            removeColorPicker(event)
+          }
+          break
+        default:
+          break
+      }
+    }
+  } catch (error) {
+    alert(error)
+  }
+}
 
-document.addEventListener('drag', function (event) {})
+/** Handles double click events.
+ * Makes the double-clicked event editable.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleDoubleClick(event) {
+  const eventTarget = event.target
+  eventTarget.setAttribute('contenteditable', true)
+}
 
-document.addEventListener('dragstart', function (event) {
+/** Handles multiple keystroke events.
+ * Uses an options dictionary to match the corresponding number pressed to a list.
+ * Pressing a number that does not match any dictionary property will result in no action.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleMultipleKeys(event) {
+  const task = document.querySelector('task-box:hover').parentElement
+
+  const options = {
+    1: todoTasks,
+    2: inProgressTasks,
+    3: doneTasks,
+  }
+
+  const list = options[event.key]
+
+  if (list) {
+    moveTask(task, list)
+  }
+}
+/** Handles keyboard events.
+ * If a task box is being hovered, allows task removal with ALT + num shortcut.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleKeyPress(event) {
+  if (
+    document.querySelector('task-box:hover') &&
+    event.altKey &&
+    POSSIBLE_KEYS.includes(event.key)
+  ) {
+    handleMultipleKeys(event)
+  }
+}
+
+/** Handles focusout events.
+ * Removes the 'contenteditable' attribute.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleFocusOut(event) {
+  event.target.setAttribute('contenteditable', false)
+}
+
+/**
+ * Saves the board for every element edit event.
+ */
+function handleInput(event) {
+  if (document.querySelector('div:focus')) {
+    captureData()
+  }
+  if (document.querySelector('.color-picker')) {
+    const colorPicker = event.target
+    colorPicker.closest('section').style.backgroundColor = colorPicker.value
+  }
+}
+
+/** Handles input events targeting the search box.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleSearchInput(event) {
+  filterTasks(event.target.value)
+}
+
+/**
+ * Sends an HTTP request. Gets a string describing the type of request.
+ * @param {String} req - the type of request to send
+ */
+async function handleRequest(req) {
+  displayLoader()
+  greyOutButtons(true)
+
+  try {
+    if (req === 'load') {
+      await getRemoteData()
+    }
+    if (req === 'save') {
+      await storeRemoteData()
+    }
+  } catch (error) {
+    DisplayInfo(error)
+  } finally {
+    greyOutButtons(false)
+    removeLoader()
+  }
+}
+
+/** Handles click events targeting an option button.
+ * Passes a request by checking the button's class name.
+ * @param {Object} event - event object recieved from the event listener
+ */
+function handleOptionClick(event) {
+  handleRequest(event.target.className)
+}
+
+/** ************** Drag & Drop Functions *************** */
+
+mainContainer.addEventListener('dragstart', (event) => {
   if (event.target.className === 'task') {
     event.target.classList.add('dragging')
   }
 })
 
-document.addEventListener('dragend', function (event) {
+mainContainer.addEventListener('dragend', (event) => {
   event.target.classList.remove('dragging')
 })
 
 /* used to disable the 'blocked' cursor icon */
 document.addEventListener(
   'dragover',
-  function (event) {
+  (event) => {
     event.preventDefault()
   },
   false
 )
-
-document.addEventListener('drop', function (event) {
-  event.preventDefault()
-  // move dragged task to the selected section
-  const dragEl = document.querySelector('.dragging')
-  const sectionElement = getSectionFromPath(event)
-  if (sectionElement) {
-    dragEl.parentNode.removeChild(dragEl)
-    const list = sectionElement.querySelector('ul')
-    list.insertBefore(dragEl, list.firstChild)
-    captureData()
-  }
-})
 
 /**
  * Gets the section element, if it exist, from the path of a drop event.
@@ -578,6 +554,35 @@ document.addEventListener('drop', function (event) {
 function getSectionFromPath(event) {
   const sectionElement = event
     .composedPath()
-    .filter((element) => element.tagName == 'SECTION')[0]
+    .filter((element) => element.tagName === 'SECTION')[0]
   return sectionElement
 }
+
+mainContainer.addEventListener('drop', (event) => {
+  event.preventDefault()
+  // move dragged task to the selected section
+  const dragEl = document.querySelector('.dragging')
+  const sectionList = getSectionFromPath(event).querySelector('ul')
+  if (sectionList) {
+    sectionList.insertBefore(dragEl, sectionList.firstChild)
+    captureData()
+  }
+})
+
+/** ************** Event Listeners *************** */
+
+mainContainer.addEventListener('click', handleClick)
+
+optionBox.addEventListener('click', handleOptionClick)
+
+window.addEventListener('load', loadData)
+
+window.addEventListener('keydown', handleKeyPress)
+
+mainContainer.addEventListener('dblclick', handleDoubleClick)
+
+mainContainer.addEventListener('focusout', handleFocusOut)
+
+mainContainer.addEventListener('input', handleInput)
+
+searchInput.addEventListener('input', handleSearchInput)
