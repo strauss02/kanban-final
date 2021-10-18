@@ -1,3 +1,5 @@
+import style from './styles.css'
+
 /** ************** Select Elements *************** */
 
 // Layout Elements
